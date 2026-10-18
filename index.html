@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lawrenceville Pest Control — Live Route Tracker</title>
+  <style>
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .card {
+      background: rgba(30, 41, 59, 0.92); border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 16px; padding: 32px 28px; max-width: 420px; width: 90%; text-align: center;
+      box-shadow: 0 20px 45px rgba(0,0,0,0.45);
+    }
+    .spinner {
+      width: 38px; height: 38px; border: 3px solid rgba(56, 189, 248, 0.2);
+      border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h2 { margin: 0 0 8px; font-size: 1.2rem; }
+    p { margin: 0; color: #94a3b8; font-size: 0.92rem; line-height: 1.45; }
+    a {
+      display: inline-block; margin-top: 18px; padding: 10px 18px; border-radius: 8px;
+      background: #0284c7; color: #fff; text-decoration: none; font-weight: 600; font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner" id="spin"></div>
+    <h2>Lawrenceville Pest Control</h2>
+    <p id="status">Connecting to Live Route Tracker...</p>
+    <a id="directLink" href="#" style="display:none;">Open Route Tracker</a>
+  </div>
+  <script>
+    async function connect() {
+      let targetUrl = "";
+      try {
+        const res = await fetch("https://ntfy.sh/lpc_route_tracker_tunnel_9482/raw?poll=1&since=all&_=" + Date.now(), { cache: "no-store" });
+        if (res.ok) {
+          const text = await res.text();
+          const lines = text.trim().split(/\r?\n/).map(s => s.trim()).filter(s => s.startsWith("https://") && s.includes(".trycloudflare.com"));
+          if (lines.length > 0) targetUrl = lines[lines.length - 1];
+        }
+      } catch (e) {}
+      if (!targetUrl) {
+        try {
+          const res2 = await fetch("./tunnel.json?_=" + Date.now(), { cache: "no-store" });
+          if (res2.ok) {
+            const data = await res2.json();
+            if (data && data.url) targetUrl = data.url;
+          }
+        } catch (e) {}
+      }
+      if (targetUrl) {
+        const link = document.getElementById("directLink");
+        link.href = targetUrl;
+        link.style.display = "inline-block";
+        window.location.replace(targetUrl);
+      } else {
+        document.getElementById("status").textContent = "Connecting to server tunnel... retrying in 3 seconds.";
+        setTimeout(connect, 3000);
+      }
+    }
+    connect();
+  </script>
+</body>
+</html>
